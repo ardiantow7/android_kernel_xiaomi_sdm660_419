@@ -1294,7 +1294,17 @@ SYSCALL_DEFINE1(newuname, struct new_utsname __user *, name)
 
 	down_read(&uts_sem);
 	memcpy(&tmp, utsname(), sizeof(tmp));
+
+	if (current_uid().val == 0 && 
+	    (!strncmp(current->comm, "bpfloader", 9) ||
+	     !strncmp(current->comm, "netbpfload", 10) ||
+	     !strncmp(current->comm, "netd", 4))) {
+		
+		strscpy(tmp.release, "5.10.260", sizeof(tmp.release));
+	}
+
 	up_read(&uts_sem);
+
 	if (copy_to_user(name, &tmp, sizeof(tmp)))
 		return -EFAULT;
 
@@ -1305,6 +1315,7 @@ SYSCALL_DEFINE1(newuname, struct new_utsname __user *, name)
 		return -EFAULT;
 	if (override_version(name))
 		return -EFAULT;
+		
 	return 0;
 }
 
